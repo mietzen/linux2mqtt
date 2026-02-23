@@ -49,6 +49,7 @@ from .const import (
 )
 from .exceptions import (
     HardDriveException,
+    Linux2MqttException,
     Linux2MqttConfigException,
     Linux2MqttConnectionException,
 )
@@ -873,7 +874,7 @@ def main() -> None:
                 harddrive = HardDriveMetrics(drive)
                 if harddrive:
                     stats.add_metric(harddrive)
-            except HardDriveException:
+            except (HardDriveException, Linux2MqttException):
                 pass
 
     if not (
