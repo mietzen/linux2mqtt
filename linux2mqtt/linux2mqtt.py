@@ -65,7 +65,9 @@ from .metrics import (
     PackageUpdateMetrics,
     TempMetrics,
     VirtualMemoryMetrics,
+    ZPoolMetrics,
 )
+from .zpool import ZPool
 from .type_definitions import Linux2MqttConfig, LinuxDeviceEntry
 
 main_logger = logging.getLogger("main")
@@ -768,6 +770,11 @@ def main() -> None:
         action="store_true",
     )
     parser.add_argument(
+        "--zpools",
+        help="Publish ZFS zpool stats if available",
+        action="store_true",
+    )
+    parser.add_argument(
         "--discovery",
         default=None,
         help=f"Discovery platforms enabled (default: {DISCOVERY_DEFAULT})",
@@ -877,6 +884,14 @@ def main() -> None:
             except (HardDriveException, Linux2MqttException):
                 pass
 
+    if args.zpools:
+        for pool_name in ZPool.get_all_pools():
+            try:
+                zpool_metric = ZPoolMetrics(pool_name)
+                stats.add_metric(zpool_metric)
+            except Linux2MqttException:
+                pass
+
     if not (
         args.vm
         or args.connections
@@ -887,6 +902,7 @@ def main() -> None:
         or args.fan
         or args.packages
         or args.harddrives
+        or args.zpools
     ):
         main_logger.warning("No metrics specified. Nothing will be published.")
 

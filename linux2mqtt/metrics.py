@@ -24,6 +24,7 @@ from .exceptions import (
     NoPackageManagerFound,
 )
 from .harddrive import NVME, HardDrive, SataDrive, get_hard_drive
+from .zpool import ZPool, ZPoolException
 from .helpers import addr_ip, addr_port, is_addr, sanitize
 from .package_manager import PackageManager, get_package_manager
 from .type_definitions import LinuxDeviceEntry, LinuxEntry, MetricEntities, SensorType
@@ -1339,6 +1340,117 @@ class HardDriveMetrics(BaseMetric):
         self.result_queue = result_queue
         th = HardDriveMetricThread(
             result_queue=result_queue, metric=self, harddrive=self.harddrive
+        )
+        th.daemon = True
+        th.start()
+        return True  # Expect a deferred result
+
+
+class ZPoolMetricThread(threading.Thread):
+    """Thread for gathering ZFS pool data."""
+
+    def __init__(
+        self,
+        result_queue: Queue[BaseMetric],
+        metric: "ZPoolMetrics",
+        zpool: ZPool,
+    ):
+        """Initialize the ZPool metric thread."""
+        threading.Thread.__init__(self)
+        self.result_queue = result_queue
+        self.metric = metric
+        self.zpool = zpool
+
+    def run(self) -> None:
+        """Run the ZPool thread."""
+        try:
+            self.zpool.parse_attributes()
+            self.metric.polled_result = {
+                **self.zpool.attributes,
+            }
+            self.result_queue.put(self.metric)
+        except Exception as ex:
+            raise Linux2MqttMetricsException(
+                f"Could not gather and publish ZFS pool data {self.metric._name}"
+            ) from ex
+
+
+class ZPoolMetrics(BaseMetric):
+    """ZFS Pool metric."""
+
+    icon = "mdi:database"
+    unit_of_measurement = ""
+    state_field = "status"
+
+    _name_template = "ZFS Pool ({})"
+
+    def __init__(self, pool_name: str):
+        """Initialize the ZFS pool metric.
+
+        Parameters
+        ----------
+        pool_name
+            The ZFS pool name
+
+        """
+        super().__init__()
+        self.zpool = ZPool(pool_name)
+        self._name = self._name_template.format(pool_name)
+
+        fields = [
+            ("status", None, None),
+            ("score", None, None),
+            ("pool_state", None, None),
+            ("alloc_gb", "GB", "data_size"),
+            ("total_gb", "GB", "data_size"),
+            ("free_gb", "GB", "data_size"),
+            ("percent", "%", None),
+            ("error_count", None, None),
+            ("scrub_state", None, None),
+            ("scrub_errors", None, None),
+            ("last_scrub", None, None),
+            ("total_read_errors", None, None),
+            ("total_write_errors", None, None),
+            ("total_checksum_errors", None, None),
+            ("degraded_devices", None, None),
+        ]
+
+        self.homeassistant_entities = [
+            MetricEntities(
+                {
+                    "name": f"{self._name} {field}",
+                    "state_field": field,
+                    "icon": "mdi:database",
+                    "unit_of_measurement": unit,
+                    "device_class": device_class,
+                }
+            )
+            for field, unit, device_class in fields
+        ]
+
+    def poll(self, result_queue: Queue[BaseMetric]) -> bool:
+        """Poll new data for the ZFS pool metric.
+
+        Parameters
+        ----------
+        result_queue
+            The queue where to post new data once gathered
+
+        Returns
+        -------
+        bool = True
+            True as the data is gathered lazily
+
+        """
+        try:
+            assert result_queue
+        except ReferenceError as e:
+            raise Linux2MqttException(
+                "Cannot start ZFS pool metric due to missing result_queue"
+            ) from e
+        self.result_queue = result_queue
+        th = ZPoolMetricThread(
+            result_queue=result_queue, metric=self, zpool=self.zpool
         )
         th.daemon = True
         th.start()

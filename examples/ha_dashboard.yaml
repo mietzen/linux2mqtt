@@ -153,6 +153,37 @@ views:
                               {% set pct = state_attr(config.entity, 'percent') | float(0) %}
                               --card-mod-icon-color: {{ 'red' if pct > 85 else 'green' }};
                             }
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: ZFS Pools
+                filter:
+                  include:
+                    - entity_id: sensor.nas_linux_zfs_pool*
+                      options:
+                        type: custom:multiple-entity-row
+                        name: " "
+                        show_state: false
+                        secondary_info:
+                          attribute: pool_state
+                        entities:
+                          - attribute: percent
+                            name: Used
+                            unit: '%'
+                          - attribute: free_gb
+                            name: Free
+                            unit: GB
+                            format: precision1
+                          - attribute: scrub_state
+                            name: Scrub
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
       - type: grid
         cards:
           - type: vertical-stack
@@ -331,6 +362,11 @@ views:
               {% endfor %} {% for e in states.sensor if e.entity_id is
               match('sensor\.nas_linux_disk_usage') %}
                 {% if state_attr(e.entity_id, 'percent') | float(0) > 85 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.nas_linux_zfs_pool') %}
+                {% if e.state in ['WARNING', 'FAILING'] %}
                   {% set ns.alert = true %}
                 {% endif %}
               {% endfor %} {% for e in states.sensor if e.entity_id is
