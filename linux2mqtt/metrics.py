@@ -23,7 +23,7 @@ from .exceptions import (
     Linux2MqttMetricsException,
     NoPackageManagerFound,
 )
-from .harddrive import HardDrive, get_hard_drive
+from .harddrive import NVME, HardDrive, SataDrive, get_hard_drive
 from .helpers import addr_ip, addr_port, is_addr, sanitize
 from .package_manager import PackageManager, get_package_manager
 from .type_definitions import LinuxDeviceEntry, LinuxEntry, MetricEntities, SensorType
@@ -1257,6 +1257,56 @@ class HardDriveMetrics(BaseMetric):
             raise Linux2MqttException(
                 "Failed to find a suitable hard drive type. Currently supported are: Hard Disk and NVME"
             ) from ex
+
+        common_fields = [
+            ("status", None, None),
+            ("score", None, None),
+            ("model_name", None, None),
+            ("device", None, None),
+            ("size_tb", "TB", "data_size"),
+            ("temperature", "°C", "temperature"),
+            ("smart_status", None, None),
+        ]
+
+        if isinstance(self.harddrive, SataDrive):
+            drive_fields = [
+                ("power_on_time", "h", "duration"),
+                ("power_cycle_count", None, None),
+                ("reallocated_sector_count", None, None),
+                ("command_timeout", None, None),
+                ("reported_uncorrectable_errors", None, None),
+                ("current_pending_sector", None, None),
+                ("offline_uncorrectable", None, None),
+                ("udma_crc_error_count", None, None),
+            ]
+        elif isinstance(self.harddrive, NVME):
+            drive_fields = [
+                ("critical_warning", None, None),
+                ("percentage_used", "%", None),
+                ("power_on_hours", "h", "duration"),
+                ("power_cycles", None, None),
+                ("media_errors", None, None),
+                ("num_err_log_entries", None, None),
+                ("critical_comp_time", None, None),
+                ("warning_temp_time", None, None),
+                ("available_spare", "%", None),
+                ("available_spare_threshold", "%", None),
+            ]
+        else:
+            drive_fields = []
+
+        self.homeassistant_entities = [
+            MetricEntities(
+                {
+                    "name": f"{self._name} {field}",
+                    "state_field": field,
+                    "icon": "mdi:thermometer" if device_class == "temperature" else "mdi:harddisk",
+                    "unit_of_measurement": unit,
+                    "device_class": device_class,
+                }
+            )
+            for field, unit, device_class in common_fields + drive_fields
+        ]
 
     def poll(self, result_queue: Queue[BaseMetric]) -> bool:
         """Poll new data for the hard drive metric.

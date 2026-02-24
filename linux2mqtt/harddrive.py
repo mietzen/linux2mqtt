@@ -79,25 +79,25 @@ class SataDrive(HardDrive):
         self.attributes = {}
         self._get_attributes()
         ata_smart_attributes = [
-            ("Reallocated Sector Count", 5),
-            ("Command Timeout", 38),
-            ("Reported Uncorrectable Errors", 187),
-            ("Current Pending Sector", 197),
-            ("Offline Uncorrectable", 198),
-            ("UDMA CRC Error Count", 199),
+            ("reallocated_sector_count", 5),
+            ("command_timeout", 38),
+            ("reported_uncorrectable_errors", 187),
+            ("current_pending_sector", 197),
+            ("offline_uncorrectable", 198),
+            ("udma_crc_error_count", 199),
         ]
 
-        self.attributes["Model Name"] = self._attributes["model_name"]  # type: ignore[index]
-        self.attributes["Device"] = self._attributes["device"]["name"]  # type: ignore[index]
-        self.attributes["Size TB"] = (
+        self.attributes["model_name"] = self._attributes["model_name"]  # type: ignore[index]
+        self.attributes["device"] = self._attributes["device"]["name"]  # type: ignore[index]
+        self.attributes["size_tb"] = (
             self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
         )  # type: ignore[index]
-        self.attributes["Temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
-        self.attributes["Smart status"] = (
+        self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
+        self.attributes["smart_status"] = (
             "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
         )  # type: ignore[index]
-        self.attributes["Power On Time"] = self._attributes["power_on_time"]["hours"]  # type: ignore[index]
-        self.attributes["Power Cycle Count"] = self._attributes["power_cycle_count"]  # type: ignore[index]
+        self.attributes["power_on_time"] = self._attributes["power_on_time"]["hours"]  # type: ignore[index]
+        self.attributes["power_cycle_count"] = self._attributes["power_cycle_count"]  # type: ignore[index]
 
         new_data = {
             item["id"]: item
@@ -116,15 +116,15 @@ class SataDrive(HardDrive):
     def get_score(self) -> None:
         """ATA Drive specific score function depending on results from smartctl."""
         score = 0
-        score += self.attributes.get("Reallocated Sector Count", 0) * 2
-        score += self.attributes.get("Current Pending Sector", 0) * 3
-        if self.attributes.get("Current Pending Sector", 0) > 10:
+        score += self.attributes.get("reallocated_sector_count", 0) * 2
+        score += self.attributes.get("current_pending_sector", 0) * 3
+        if self.attributes.get("current_pending_sector", 0) > 10:
             score += 30
 
-        score += self.attributes.get("Offline Uncorrectable", 0) * 3
-        score += self.attributes.get("Reported Uncorrectable Errors", 0) * 2
-        score += self.attributes.get("Command Timeout", 0) * 1.5
-        score += min(self.attributes.get("UDMA CRC Error Count", 0), 10)
+        score += self.attributes.get("offline_uncorrectable", 0) * 3
+        score += self.attributes.get("reported_uncorrectable_errors", 0) * 2
+        score += self.attributes.get("command_timeout", 0) * 1.5
+        score += min(self.attributes.get("udma_crc_error_count", 0), 10)
 
         self.score = score
 
@@ -149,13 +149,13 @@ class NVME(HardDrive):
             "available_spare_threshold",
         ]
 
-        self.attributes["Model Name"] = self._attributes["model_name"]  # type: ignore[index]
-        self.attributes["Device"] = self._attributes["device"]["name"]  # type: ignore[index]
-        self.attributes["Size TB"] = (
+        self.attributes["model_name"] = self._attributes["model_name"]  # type: ignore[index]
+        self.attributes["device"] = self._attributes["device"]["name"]  # type: ignore[index]
+        self.attributes["size_tb"] = (
             self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
         )  # type: ignore[index]
-        self.attributes["Temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
-        self.attributes["Smart status"] = (
+        self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
+        self.attributes["smart_status"] = (
             "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
         )  # type: ignore[index]
 
@@ -178,21 +178,21 @@ class NVME(HardDrive):
             score += 100  # Any critical flag = high risk
 
         # NAND wear
-        if self.attributes.get("percent_used", 0) > 90:
+        if self.attributes.get("percentage_used", 0) > 90:
             score += 50
-        elif self.attributes.get("percent_used", 0) > 80:
+        elif self.attributes.get("percentage_used", 0) > 80:
             score += 20
-        elif self.attributes.get("percent_used", 0) > 70:
+        elif self.attributes.get("percentage_used", 0) > 70:
             score += 10
 
         # Media/data errors
         score += self.attributes.get("media_errors", 0) * 5
 
         # Error log entries
-        score += min(self.attributes.get("num_error_log_entries", 0), 50)  # cap at 50
+        score += min(self.attributes.get("num_err_log_entries", 0), 50)  # cap at 50
 
         # Temperature issues
-        if self.attributes.get("critical_temp_time", 0) > 0:
+        if self.attributes.get("critical_comp_time", 0) > 0:
             score += 30
         elif self.attributes.get("warning_temp_time", 0) > 0:
             score += 10
