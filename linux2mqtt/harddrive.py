@@ -117,6 +117,20 @@ class SataDrive(HardDrive):
             if tmp is not None:
                 self.attributes[name] = tmp
 
+        # Detect SSD vs HDD: SSDs have no Spin_Up_Time (SMART ID 3)
+        rotation_rate = self._attributes.get("rotation_rate")  # type: ignore[union-attr]
+        if rotation_rate is not None:
+            self.attributes["drive_type"] = "HDD" if rotation_rate > 0 else "SSD"
+        else:
+            self.attributes["drive_type"] = "HDD" if new_data.get(3) else "SSD"
+
+        # For SSDs, parse Wear_Leveling_Count (SMART ID 177)
+        if self.attributes["drive_type"] == "SSD":
+            wear_entry = new_data.get(177)
+            if wear_entry:
+                # Normalized value starts at 100, decreases with wear
+                self.attributes["percentage_used"] = 100 - wear_entry["value"]
+
         self.get_score()
         self.get_status()
         self.attributes["score"] = self.score
@@ -134,6 +148,16 @@ class SataDrive(HardDrive):
         score += self.attributes.get("reported_uncorrectable_errors", 0) * 2
         score += self.attributes.get("command_timeout", 0) * 1.5
         score += min(self.attributes.get("udma_crc_error_count", 0), 10)
+
+        # SSD wear
+        if self.attributes.get("drive_type") == "SSD":
+            percentage_used = self.attributes.get("percentage_used", 0)
+            if percentage_used > 90:
+                score += 50
+            elif percentage_used > 80:
+                score += 20
+            elif percentage_used > 70:
+                score += 10
 
         self.score = score
 

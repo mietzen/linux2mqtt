@@ -1,0 +1,293 @@
+views:
+  - type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: NAS
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: sensor.nas_linux_cpu
+                    primary: CPU
+                    secondary: >-
+                      {{ states(entity) | round(1) }}% | IO Wait: {{
+                      state_attr(entity, 'iowait') | default(0) | round(1) }}%
+                    icon: mdi:chip
+                    icon_color: '{{ ''red'' if states(entity) | float(0) > 95 else ''green'' }}'
+                  - type: custom:mushroom-template-card
+                    entity: sensor.nas_linux_virtual_memory
+                    primary: Memory
+                    secondary: >-
+                      {{ state_attr(entity, 'percent') }}% | {{
+                      (state_attr(entity, 'free') | float / 1000) | round(1) }}
+                      GB free
+                    icon: mdi:memory
+                    icon_color: >-
+                      {{ 'red' if state_attr(entity, 'percent') | float(0) > 90
+                      else 'green' }}
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: SMART Status (SSD / NVME)
+                filter:
+                  include:
+                    - entity_id: sensor.nas_linux_hard_drive_id_nvme*
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+                          - attribute: percentage_used
+                            name: Wear
+                            unit: '%'
+                    - entity_id: sensor.nas_linux_hard_drive_id_ata*
+                      attributes:
+                        drive_type: SSD
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+                          - attribute: percentage_used
+                            name: Wear
+                            unit: '%'
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: SMART Status (HDD)
+                filter:
+                  include:
+                    - entity_id: sensor.nas_linux_hard_drive_id_ata*
+                      attributes:
+                        drive_type: HDD
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+              - type: entities
+                title: Temperatures
+                entities:
+                  - entity: sensor.nas_linux_thermal_zone_k10temp_tctl
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: Disk Usage
+                filter:
+                  include:
+                    - entity_id: sensor.nas_linux_disk_usage*
+                      options:
+                        type: custom:multiple-entity-row
+                        show_state: false
+                        entities:
+                          - attribute: percent
+                            name: Used
+                            unit: '%'
+                          - attribute: free
+                            name: Free
+                            unit: GB
+                            format: precision1
+      - type: grid
+        cards:
+          - type: vertical-stack
+            cards:
+              - type: custom:mushroom-title-card
+                title: Lenovo M720Q
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: sensor.lenovo_m720q_linux_cpu
+                    primary: CPU
+                    secondary: >-
+                      {{ states(entity) | round(1) }}% | IO Wait: {{
+                      state_attr(entity, 'iowait') | default(0) | round(1) }}%
+                    icon: mdi:chip
+                    icon_color: '{{ ''red'' if states(entity) | float(0) > 95 else ''green'' }}'
+                  - type: custom:mushroom-template-card
+                    entity: sensor.lenovo_m720q_linux_virtual_memory
+                    primary: Memory
+                    secondary: >-
+                      {{ state_attr(entity, 'percent') }}% | {{
+                      (state_attr(entity, 'free') | float / 1000) | round(1) }}
+                      GB free
+                    icon: mdi:memory
+                    icon_color: >-
+                      {{ 'red' if state_attr(entity, 'percent') | float(0) > 90
+                      else 'green' }}
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: SMART Status (SSD / NVME)
+                filter:
+                  include:
+                    - entity_id: sensor.lenovo_m720q_linux_hard_drive_id_nvme*
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+                          - attribute: percentage_used
+                            name: Wear
+                            unit: '%'
+                    - entity_id: sensor.lenovo_m720q_linux_hard_drive_id_ata*
+                      attributes:
+                        drive_type: SSD
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+                          - attribute: percentage_used
+                            name: Wear
+                            unit: '%'
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: SMART Status (HDD)
+                filter:
+                  include:
+                    - entity_id: sensor.lenovo_m720q_linux_hard_drive_id_ata*
+                      attributes:
+                        drive_type: HDD
+                      options:
+                        type: custom:multiple-entity-row
+                        name: false
+                        secondary_info:
+                          attribute: model_name
+                        entities:
+                          - attribute: score
+                            name: Score
+                          - attribute: temperature
+                            name: Temp
+                            unit: °C
+              - type: entities
+                title: Temperatures
+                entities:
+                  - entity: sensor.lenovo_m720q_linux_thermal_zone_coretemp_package_id_0
+              - type: custom:auto-entities
+                show_empty: false
+                card:
+                  type: entities
+                  title: Disk Usage
+                filter:
+                  include:
+                    - entity_id: sensor.lenovo_m720q_linux_disk_usage*
+                      options:
+                        type: custom:multiple-entity-row
+                        show_state: false
+                        entities:
+                          - attribute: percent
+                            name: Used
+                            unit: '%'
+                          - attribute: free
+                            name: Free
+                            unit: GB
+                            format: precision1
+    badges:
+      - type: custom:mushroom-chips-card
+        alignment: center
+        chips:
+          - type: template
+            content: NAS
+            icon: mdi:nas
+            entity: sensor.nas_linux_cpu
+            icon_color: >-
+              {% set ns = namespace(alert=false) %} {% if
+              states('sensor.nas_linux_cpu') | float(0) > 95 %}
+                {% set ns.alert = true %}
+              {% endif %} {% if state_attr('sensor.nas_linux_virtual_memory',
+              'percent') | float(0) > 90 %}
+                {% set ns.alert = true %}
+              {% endif %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.nas_linux_hard_drive') %}
+                {% if e.state in ['WARNING', 'FAILING'] %}
+                  {% set ns.alert = true %}
+                {% endif %}
+                {% if state_attr(e.entity_id, 'percentage_used') | float(0) > 50 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.nas_linux_disk_usage') %}
+                {% if state_attr(e.entity_id, 'percent') | float(0) > 85 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.nas_linux_thermal_zone') %}
+                {% if e.state | float(0) > 80 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {{ 'red' if ns.alert else 'green' }}
+          - type: template
+            content: Lenovo M720Q
+            icon: mdi:desktop-tower
+            entity: sensor.lenovo_m720q_linux_cpu
+            icon_color: >-
+              {% set ns = namespace(alert=false) %} {% if
+              states('sensor.lenovo_m720q_linux_cpu') | float(0) > 95 %}
+                {% set ns.alert = true %}
+              {% endif %} {% if
+              state_attr('sensor.lenovo_m720q_linux_virtual_memory', 'percent')
+              | float(0) > 90 %}
+                {% set ns.alert = true %}
+              {% endif %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.lenovo_m720q_linux_hard_drive') %}
+                {% if e.state in ['WARNING', 'FAILING'] %}
+                  {% set ns.alert = true %}
+                {% endif %}
+                {% if state_attr(e.entity_id, 'percentage_used') | float(0) > 50 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.lenovo_m720q_linux_disk_usage') %}
+                {% if state_attr(e.entity_id, 'percent') | float(0) > 85 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {% for e in states.sensor if e.entity_id is
+              match('sensor\.lenovo_m720q_linux_thermal_zone') %}
+                {% if e.state | float(0) > 80 %}
+                  {% set ns.alert = true %}
+                {% endif %}
+              {% endfor %} {{ 'red' if ns.alert else 'green' }}
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: '# Home Lab - Metrics'

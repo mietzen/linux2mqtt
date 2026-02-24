@@ -1270,6 +1270,8 @@ class HardDriveMetrics(BaseMetric):
 
         if isinstance(self.harddrive, SataDrive):
             drive_fields = [
+                ("drive_type", None, None),
+                ("percentage_used", "%", None),
                 ("power_on_time", "h", "duration"),
                 ("power_cycle_count", None, None),
                 ("reallocated_sector_count", None, None),
