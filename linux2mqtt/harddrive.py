@@ -92,7 +92,8 @@ class SataDrive(HardDrive):
         self.attributes["size_tb"] = (
             self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
         )  # type: ignore[index]
-        self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
+        if "temperature" in self._attributes:  # type: ignore[operator]
+            self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
         self.attributes["smart_status"] = (
             "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
         )  # type: ignore[index]
@@ -154,7 +155,8 @@ class NVME(HardDrive):
         self.attributes["size_tb"] = (
             self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
         )  # type: ignore[index]
-        self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
+        if "temperature" in self._attributes:  # type: ignore[operator]
+            self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
         self.attributes["smart_status"] = (
             "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
         )  # type: ignore[index]
