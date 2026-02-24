@@ -58,6 +58,7 @@ from .metrics import (
     BaseMetric,
     CPUMetrics,
     DiskUsageMetrics,
+    EccMetrics,
     FanSpeedMetrics,
     HardDriveMetrics,
     NetConnectionMetrics,
@@ -775,6 +776,11 @@ def main() -> None:
         action="store_true",
     )
     parser.add_argument(
+        "--ecc",
+        help="Publish ECC memory error stats if available",
+        action="store_true",
+    )
+    parser.add_argument(
         "--discovery",
         default=None,
         help=f"Discovery platforms enabled (default: {DISCOVERY_DEFAULT})",
@@ -892,6 +898,11 @@ def main() -> None:
             except Linux2MqttException:
                 pass
 
+    if args.ecc:
+        if EccMetrics.is_available():
+            ecc = EccMetrics()
+            stats.add_metric(ecc)
+
     if not (
         args.vm
         or args.connections
@@ -903,6 +914,7 @@ def main() -> None:
         or args.packages
         or args.harddrives
         or args.zpools
+        or args.ecc
     ):
         main_logger.warning("No metrics specified. Nothing will be published.")
 

@@ -125,6 +125,25 @@ views:
                         :host {
                           --card-mod-icon-color: {{ 'red' if states('sensor.nas_linux_thermal_zone_k10temp_tctl') | float(0) > 90 else 'green' }};
                         }
+              - type: entities
+                title: ECC Memory
+                entities:
+                  - entity: sensor.nas_linux_ecc_memory
+                    type: custom:multiple-entity-row
+                    name: " "
+                    show_state: false
+                    entities:
+                      - attribute: correctable_errors
+                        name: CE
+                      - attribute: uncorrectable_errors
+                        name: UE
+                    card_mod:
+                      style: |
+                        :host {
+                          {% set st = states[config.entity].state %}
+                          --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                          --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                        }
               - type: custom:auto-entities
                 show_empty: false
                 card:
@@ -367,7 +386,9 @@ views:
                 {% if e.state in ['WARNING', 'FAILING'] %}
                   {% set ns.alert = true %}
                 {% endif %}
-              {% endfor %} {% for e in states.sensor if e.entity_id is
+              {% endfor %} {% if states('sensor.nas_linux_ecc_memory') in ['WARNING', 'FAILING'] %}
+                {% set ns.alert = true %}
+              {% endif %} {% for e in states.sensor if e.entity_id is
               match('sensor\.nas_linux_thermal_zone') %}
                 {% if e.state | float(0) > 80 %}
                   {% set ns.alert = true %}

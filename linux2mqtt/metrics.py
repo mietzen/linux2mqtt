@@ -1,8 +1,11 @@
 """linux2mqtt metrics."""
 
+import json
 import logging
+import shlex
 from queue import Queue
 import socket
+from subprocess import DEVNULL, PIPE, Popen
 import threading
 import time
 from typing import Any, Self
@@ -1455,3 +1458,97 @@ class ZPoolMetrics(BaseMetric):
         th.daemon = True
         th.start()
         return True  # Expect a deferred result
+
+
+class EccMetrics(BaseMetric):
+    """ECC memory error metrics via edac-util."""
+
+    icon = "mdi:memory"
+    unit_of_measurement = ""
+    state_field = "status"
+
+    _name = "ECC Memory"
+
+    def __init__(self):
+        """Initialize the ECC memory metric."""
+        super().__init__()
+
+        fields = [
+            ("status", None, None),
+            ("score", None, None),
+            ("correctable_errors", None, None),
+            ("uncorrectable_errors", None, None),
+        ]
+
+        self.homeassistant_entities = [
+            MetricEntities(
+                {
+                    "name": f"{self._name} {field}",
+                    "state_field": field,
+                    "icon": "mdi:memory",
+                    "unit_of_measurement": unit,
+                    "device_class": device_class,
+                }
+            )
+            for field, unit, device_class in fields
+        ]
+
+    @staticmethod
+    def is_available() -> bool:
+        """Check if edac-util is available on this system."""
+        try:
+            command = shlex.split("/usr/bin/edac-util -s")
+            with Popen(command, stdout=PIPE, stderr=DEVNULL, text=True) as proc:
+                proc.communicate(timeout=5)
+                return proc.returncode == 0
+        except (FileNotFoundError, OSError):
+            return False
+
+    def poll(self, result_queue: Queue["BaseMetric"]) -> bool:
+        """Poll ECC error data from edac-util."""
+        try:
+            command = shlex.split("/usr/bin/edac-util -rfull")
+            with Popen(command, stdout=PIPE, stderr=DEVNULL, text=True) as proc:
+                stdout, _ = proc.communicate(timeout=10)
+                if proc.returncode != 0:
+                    raise Linux2MqttMetricsException("edac-util failed")
+
+            ce_total = 0
+            ue_total = 0
+            for line in stdout.strip().splitlines():
+                parts = line.split(":")
+                if len(parts) >= 5:
+                    error_type = parts[3]
+                    count = int(parts[4])
+                    if error_type == "CE":
+                        ce_total += count
+                    elif error_type == "UE":
+                        ue_total += count
+
+            score = 0
+            if ue_total > 0:
+                score += 100
+            if ce_total > 0:
+                score += min(ce_total, 50)
+
+            if score <= 10:
+                status = "HEALTHY"
+            elif score <= 20:
+                status = "GOOD"
+            elif score <= 50:
+                status = "WARNING"
+            else:
+                status = "FAILING"
+
+            self.polled_result = {
+                "correctable_errors": ce_total,
+                "uncorrectable_errors": ue_total,
+                "score": score,
+                "status": status,
+            }
+        except Exception as ex:
+            raise Linux2MqttMetricsException(
+                "Could not gather ECC memory data"
+            ) from ex
+        else:
+            return False
