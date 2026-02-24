@@ -166,7 +166,7 @@ views:
                         name: " "
                         show_state: false
                         secondary_info:
-                          attribute: pool_state
+                          attribute: pool_name
                         entities:
                           - attribute: percent
                             name: Used
@@ -175,8 +175,6 @@ views:
                             name: Free
                             unit: GB
                             format: precision1
-                          - attribute: scrub_state
-                            name: Scrub
                         card_mod:
                           style: |
                             :host {

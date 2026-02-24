@@ -113,6 +113,7 @@ class ZPool:
             raise ZPoolException(f"Pool '{self.pool_name}' not found")
 
         self.attributes = {}
+        self.attributes["pool_name"] = self.pool_name
 
         # Pool state
         state = pool_data.get("state", "UNKNOWN")
