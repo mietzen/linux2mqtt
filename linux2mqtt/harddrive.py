@@ -112,6 +112,7 @@ class SataDrive(HardDrive):
         ata_smart = self._attributes.get("ata_smart_attributes", {})  # type: ignore[union-attr]
         table = ata_smart.get("table", [])
         new_data = {item["id"]: item for item in table}
+        data_by_name = {item["name"]: item for item in table}
         for name, key in ata_smart_attributes:
             tmp = new_data[key]["raw"]["value"] if new_data.get(key) else None
             if tmp is not None:
@@ -124,9 +125,9 @@ class SataDrive(HardDrive):
         else:
             self.attributes["drive_type"] = "HDD" if new_data.get(3) else "SSD"
 
-        # For SSDs, parse Wear_Leveling_Count (SMART ID 177)
+        # For SSDs, parse Wear_Leveling_Count by name (ID varies by manufacturer)
         if self.attributes["drive_type"] == "SSD":
-            wear_entry = new_data.get(177)
+            wear_entry = data_by_name.get("Wear_Leveling_Count")
             if wear_entry:
                 # Normalized value starts at 100, decreases with wear
                 self.attributes["percentage_used"] = 100 - wear_entry["value"]

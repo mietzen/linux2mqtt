@@ -517,6 +517,7 @@ class DiskUsageMetrics(BaseMetric):
         try:
             disk = psutil.disk_usage(self.mountpoint)
             self.polled_result = {
+                "mountpoint": self.mountpoint,
                 "total": float(disk.total) / 1_000_000_000,
                 "used": float(disk.used) / 1_000_000_000,
                 "free": float(disk.free) / 1_000_000_000,

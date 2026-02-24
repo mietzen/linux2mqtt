@@ -21,9 +21,11 @@ views:
                     entity: sensor.nas_linux_virtual_memory
                     primary: Memory
                     secondary: >-
-                      {{ state_attr(entity, 'percent') }}% | {{
-                      (state_attr(entity, 'free') | float / 1000) | round(1) }}
-                      GB free
+                      {{ state_attr(entity, 'percent') }}% |
+                      {% set free = state_attr(entity, 'free') | float(0) %}
+                      {% if free >= 1000000 %}{{ (free / 1000000) | round(1) }} TB
+                      {% elif free >= 1000 %}{{ (free / 1000) | round(1) }} GB
+                      {% else %}{{ free | round(0) }} MB{% endif %} free
                     icon: mdi:memory
                     icon_color: >-
                       {{ 'red' if state_attr(entity, 'percent') | float(0) > 90
@@ -38,7 +40,8 @@ views:
                     - entity_id: sensor.nas_linux_hard_drive_id_nvme*
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -50,12 +53,20 @@ views:
                           - attribute: percentage_used
                             name: Wear
                             unit: '%'
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
                     - entity_id: sensor.nas_linux_hard_drive_id_ata*
                       attributes:
                         drive_type: SSD
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -67,6 +78,13 @@ views:
                           - attribute: percentage_used
                             name: Wear
                             unit: '%'
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
               - type: custom:auto-entities
                 show_empty: false
                 card:
@@ -79,7 +97,8 @@ views:
                         drive_type: HDD
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -88,10 +107,24 @@ views:
                           - attribute: temperature
                             name: Temp
                             unit: °C
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
               - type: entities
                 title: Temperatures
                 entities:
                   - entity: sensor.nas_linux_thermal_zone_k10temp_tctl
+                    name: CPU
+                    icon: mdi:thermometer
+                    card_mod:
+                      style: |
+                        :host {
+                          --card-mod-icon-color: {{ 'red' if states('sensor.nas_linux_thermal_zone_k10temp_tctl') | float(0) > 90 else 'green' }};
+                        }
               - type: custom:auto-entities
                 show_empty: false
                 card:
@@ -102,7 +135,10 @@ views:
                     - entity_id: sensor.nas_linux_disk_usage*
                       options:
                         type: custom:multiple-entity-row
+                        name: " "
                         show_state: false
+                        secondary_info:
+                          attribute: mountpoint
                         entities:
                           - attribute: percent
                             name: Used
@@ -111,6 +147,12 @@ views:
                             name: Free
                             unit: GB
                             format: precision1
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set pct = state_attr(config.entity, 'percent') | float(0) %}
+                              --card-mod-icon-color: {{ 'red' if pct > 85 else 'green' }};
+                            }
       - type: grid
         cards:
           - type: vertical-stack
@@ -131,9 +173,11 @@ views:
                     entity: sensor.lenovo_m720q_linux_virtual_memory
                     primary: Memory
                     secondary: >-
-                      {{ state_attr(entity, 'percent') }}% | {{
-                      (state_attr(entity, 'free') | float / 1000) | round(1) }}
-                      GB free
+                      {{ state_attr(entity, 'percent') }}% |
+                      {% set free = state_attr(entity, 'free') | float(0) %}
+                      {% if free >= 1000000 %}{{ (free / 1000000) | round(1) }} TB
+                      {% elif free >= 1000 %}{{ (free / 1000) | round(1) }} GB
+                      {% else %}{{ free | round(0) }} MB{% endif %} free
                     icon: mdi:memory
                     icon_color: >-
                       {{ 'red' if state_attr(entity, 'percent') | float(0) > 90
@@ -148,7 +192,8 @@ views:
                     - entity_id: sensor.lenovo_m720q_linux_hard_drive_id_nvme*
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -160,12 +205,20 @@ views:
                           - attribute: percentage_used
                             name: Wear
                             unit: '%'
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
                     - entity_id: sensor.lenovo_m720q_linux_hard_drive_id_ata*
                       attributes:
                         drive_type: SSD
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -177,6 +230,13 @@ views:
                           - attribute: percentage_used
                             name: Wear
                             unit: '%'
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
               - type: custom:auto-entities
                 show_empty: false
                 card:
@@ -189,7 +249,8 @@ views:
                         drive_type: HDD
                       options:
                         type: custom:multiple-entity-row
-                        name: false
+                        name: " "
+                        show_state: false
                         secondary_info:
                           attribute: model_name
                         entities:
@@ -198,10 +259,24 @@ views:
                           - attribute: temperature
                             name: Temp
                             unit: °C
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set st = states[config.entity].state %}
+                              --card-mod-icon: {{ 'mdi:check-decagram' if st in ['HEALTHY', 'GOOD'] else 'mdi:alert-decagram' }};
+                              --card-mod-icon-color: {{ 'green' if st in ['HEALTHY', 'GOOD'] else 'red' }};
+                            }
               - type: entities
                 title: Temperatures
                 entities:
                   - entity: sensor.lenovo_m720q_linux_thermal_zone_coretemp_package_id_0
+                    name: CPU
+                    icon: mdi:thermometer
+                    card_mod:
+                      style: |
+                        :host {
+                          --card-mod-icon-color: {{ 'red' if states('sensor.lenovo_m720q_linux_thermal_zone_coretemp_package_id_0') | float(0) > 90 else 'green' }};
+                        }
               - type: custom:auto-entities
                 show_empty: false
                 card:
@@ -212,7 +287,10 @@ views:
                     - entity_id: sensor.lenovo_m720q_linux_disk_usage*
                       options:
                         type: custom:multiple-entity-row
+                        name: " "
                         show_state: false
+                        secondary_info:
+                          attribute: mountpoint
                         entities:
                           - attribute: percent
                             name: Used
@@ -221,6 +299,12 @@ views:
                             name: Free
                             unit: GB
                             format: precision1
+                        card_mod:
+                          style: |
+                            :host {
+                              {% set pct = state_attr(config.entity, 'percent') | float(0) %}
+                              --card-mod-icon-color: {{ 'red' if pct > 85 else 'green' }};
+                            }
     badges:
       - type: custom:mushroom-chips-card
         alignment: center
