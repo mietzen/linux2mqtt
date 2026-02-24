@@ -51,6 +51,21 @@ class HardDrive:
 
         self._attributes = raw_json_data
 
+    def _parse_common_attributes(self) -> None:
+        """Parse common attributes shared by all drive types."""
+        self._get_attributes()
+        self.attributes["model_name"] = self._attributes.get("model_name", "Unknown")  # type: ignore[union-attr]
+        device = self._attributes.get("device", {})  # type: ignore[union-attr]
+        self.attributes["device"] = device.get("name", "Unknown")
+        capacity = self._attributes.get("user_capacity", {})  # type: ignore[union-attr]
+        self.attributes["size_tb"] = capacity.get("bytes", 0) / 1000000000000
+        temperature = self._attributes.get("temperature")  # type: ignore[union-attr]
+        if temperature is not None:
+            self.attributes["temperature"] = temperature.get("current")
+        smart_status = self._attributes.get("smart_status")  # type: ignore[union-attr]
+        if smart_status is not None:
+            self.attributes["smart_status"] = "Healthy" if smart_status.get("passed") else "Failed"
+
     def parse_attributes(self) -> None:
         """Hard Drive specific parse function depending on results from smartctl."""
         raise Linux2MqttException from NotImplementedError
@@ -77,7 +92,7 @@ class SataDrive(HardDrive):
     def parse_attributes(self) -> None:
         """Parse out attributes from smartctl where available."""
         self.attributes = {}
-        self._get_attributes()
+        self._parse_common_attributes()
         ata_smart_attributes = [
             ("reallocated_sector_count", 5),
             ("command_timeout", 38),
@@ -87,23 +102,16 @@ class SataDrive(HardDrive):
             ("udma_crc_error_count", 199),
         ]
 
-        self.attributes["model_name"] = self._attributes["model_name"]  # type: ignore[index]
-        self.attributes["device"] = self._attributes["device"]["name"]  # type: ignore[index]
-        self.attributes["size_tb"] = (
-            self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
-        )  # type: ignore[index]
-        if "temperature" in self._attributes:  # type: ignore[operator]
-            self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
-        self.attributes["smart_status"] = (
-            "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
-        )  # type: ignore[index]
-        self.attributes["power_on_time"] = self._attributes["power_on_time"]["hours"]  # type: ignore[index]
-        self.attributes["power_cycle_count"] = self._attributes["power_cycle_count"]  # type: ignore[index]
+        power_on_time = self._attributes.get("power_on_time")  # type: ignore[union-attr]
+        if power_on_time is not None:
+            self.attributes["power_on_time"] = power_on_time.get("hours")
+        power_cycle_count = self._attributes.get("power_cycle_count")  # type: ignore[union-attr]
+        if power_cycle_count is not None:
+            self.attributes["power_cycle_count"] = power_cycle_count
 
-        new_data = {
-            item["id"]: item
-            for item in self._attributes["ata_smart_attributes"]["table"]  # type: ignore[index]
-        }  # type: ignore[index]
+        ata_smart = self._attributes.get("ata_smart_attributes", {})  # type: ignore[union-attr]
+        table = ata_smart.get("table", [])
+        new_data = {item["id"]: item for item in table}
         for name, key in ata_smart_attributes:
             tmp = new_data[key]["raw"]["value"] if new_data.get(key) else None
             if tmp is not None:
@@ -136,7 +144,7 @@ class NVME(HardDrive):
     def parse_attributes(self) -> None:
         """Parse NVME Smartctl attributes."""
         self.attributes = {}
-        self._get_attributes()
+        self._parse_common_attributes()
         nvme_smart_attributes = [
             "critical_warning",
             "percentage_used",
@@ -150,19 +158,9 @@ class NVME(HardDrive):
             "available_spare_threshold",
         ]
 
-        self.attributes["model_name"] = self._attributes["model_name"]  # type: ignore[index]
-        self.attributes["device"] = self._attributes["device"]["name"]  # type: ignore[index]
-        self.attributes["size_tb"] = (
-            self._attributes["user_capacity"]["bytes"] / 1000000000000  # type: ignore[index]
-        )  # type: ignore[index]
-        if "temperature" in self._attributes:  # type: ignore[operator]
-            self.attributes["temperature"] = self._attributes["temperature"]["current"]  # type: ignore[index]
-        self.attributes["smart_status"] = (
-            "Healthy" if self._attributes["smart_status"]["passed"] else "Failed"  # type: ignore[index]
-        )  # type: ignore[index]
-
+        health_log = self._attributes.get("nvme_smart_health_information_log", {})  # type: ignore[union-attr]
         for key in nvme_smart_attributes:
-            tmp = self._attributes["nvme_smart_health_information_log"].get(key)  # type: ignore[index]
+            tmp = health_log.get(key)
             if tmp is not None:
                 self.attributes[key] = tmp
 
